@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Practice{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>All Questions</h2>
+  {% for q in questions %}
+    <div class="row">
+      <div>
+        <strong>{{ q.title }}</strong>
+        <span class="badge {{ q.difficulty }}">{{ q.get_difficulty_display }}</span>
+      </div>
+      <a href="{% url 'practice' q.id %}" class="btn btn-outline">Solve</a>
+    </div>
+  {% empty %}
+    <p class="muted">No questions yet. Run <code>python manage.py seed_questions</code>.</p>
+  {% endfor %}
+</div>
+{% endblock %}

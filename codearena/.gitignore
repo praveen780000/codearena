@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+django_app/db.sqlite3
+django_app/staticfiles/
+*.log
+.env
+.env.local
+.DS_Store
+.vscode/
+.idea/
