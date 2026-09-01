@@ -10,7 +10,7 @@ other submission. No auth on this endpoint yet — see README.
 from typing import List
 
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from judge import judge_submission, compute_similarity
 
@@ -30,7 +30,7 @@ class JudgeRequest(BaseModel):
     code: str
     sample_input: str = ""
     expected_output: str = ""
-    other_submissions: List[OtherSubmission] = []
+    other_submissions: List[OtherSubmission] = Field(default_factory=list)
 
 
 @app.get("/")
@@ -41,6 +41,8 @@ def root():
 @app.post("/judge")
 def judge(payload: JudgeRequest):
     result = judge_submission(payload.code, payload.sample_input, payload.expected_output)
-    similarity = compute_similarity(payload.code, [s.dict() for s in payload.other_submissions])
+    similarity = compute_similarity(
+        payload.code, [submission.model_dump() for submission in payload.other_submissions]
+    )
     result.update(similarity)
     return result

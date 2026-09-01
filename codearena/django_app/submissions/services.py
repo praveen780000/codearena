@@ -12,6 +12,10 @@ class JudgeServiceError(Exception):
     pass
 
 
+REQUIRED_RESULT_FIELDS = {"output", "status", "similarity_score", "most_similar_user"}
+VALID_STATUSES = {"Passed", "Failed", "Error"}
+
+
 def judge_code(code, sample_input, expected_output, other_submissions):
     """
     other_submissions: list of {"username": str, "code": str}
@@ -29,4 +33,15 @@ def judge_code(code, sample_input, expected_output, other_submissions):
         resp.raise_for_status()
     except requests.exceptions.RequestException as exc:
         raise JudgeServiceError(str(exc)) from exc
-    return resp.json()
+
+    try:
+        result = resp.json()
+    except ValueError as exc:
+        raise JudgeServiceError("Judge service returned invalid JSON.") from exc
+
+    if not isinstance(result, dict) or not REQUIRED_RESULT_FIELDS.issubset(result):
+        raise JudgeServiceError("Judge service returned an incomplete result.")
+    if result["status"] not in VALID_STATUSES:
+        raise JudgeServiceError("Judge service returned an invalid submission status.")
+
+    return result

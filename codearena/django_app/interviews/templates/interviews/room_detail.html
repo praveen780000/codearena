@@ -17,20 +17,23 @@
   {% endif %}
 </div>
 
-<div class="card">
-  <h3>Submit Solution</h3>
-  <form method="post">
-    {% csrf_token %}
-    <textarea name="code" rows="12">{{ question.starter_code }}</textarea>
-    <button type="submit" style="margin-top:12px;">Submit</button>
-  </form>
-</div>
+{% if user.role == 'student' %}
+  <div class="card">
+    <h3>Submit Solution</h3>
+    <form method="post">
+      {% csrf_token %}
+      <textarea name="code" rows="12">{{ question.starter_code }}</textarea>
+      <button type="submit" style="margin-top:12px;">Submit</button>
+    </form>
+  </div>
+{% endif %}
 
 <div class="card">
-  <h3>Submission History (this room)</h3>
+  <h3>{% if user == room.created_by %}Candidate Submissions{% else %}Your Submissions{% endif %}</h3>
   {% for s in submissions %}
     <div style="border-bottom:1px solid #334155; padding:14px 0;">
       <span class="badge {{ s.status }}">{{ s.status }}</span>
+      {% if user == room.created_by %}<span class="muted">{{ s.user.username }} · </span>{% endif %}
       <span class="muted">{{ s.submitted_at|date:"d M Y, H:i" }}</span>
       {% if s.similarity_score >= 80 %}
         <div class="similarity-warning">

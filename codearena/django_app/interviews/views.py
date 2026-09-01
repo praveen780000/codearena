@@ -43,9 +43,15 @@ def join_room_view(request):
 def room_detail_view(request, room_code):
     room = get_object_or_404(Room, room_code=room_code)
     question = room.question
-    submissions = Submission.objects.filter(room=room, user=request.user)
+    submissions = Submission.objects.filter(room=room)
+    if request.user != room.created_by:
+        submissions = submissions.filter(user=request.user)
 
     if request.method == 'POST':
+        if request.user.role != 'student':
+            messages.error(request, "Only students can submit interview solutions.")
+            return redirect('room_detail', room_code=room.room_code)
+
         if not question:
             messages.error(request, "This room has no question assigned yet.")
             return redirect('room_detail', room_code=room.room_code)
