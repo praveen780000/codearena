@@ -19,6 +19,10 @@ def practice_view(request, question_id):
     submissions = Submission.objects.filter(question=question, user=request.user, room__isnull=True)
 
     if request.method == 'POST':
+        if request.user.role != 'student':
+            messages.error(request, "Only students can submit practice solutions.")
+            return redirect('practice', question_id=question.id)
+
         code = request.POST.get('code', '')
         other_subs_qs = Submission.objects.filter(question=question).exclude(user=request.user)[:50]
         other_submissions = [{"username": s.user.username, "code": s.code} for s in other_subs_qs]
