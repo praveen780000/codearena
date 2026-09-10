@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Join Room{% endblock %}
+{% block content %}
+<div class="card" style="max-width:420px; margin:0 auto; text-align:center;">
+  <h2>Join an Interview Room</h2>
+  <form method="post">
+    {% csrf_token %}
+    <label>Room Code</label>
+    <input type="text" name="room_code" required style="width:100%; text-align:center; font-size:20px; letter-spacing:3px; text-transform:uppercase;">
+    <button type="submit" style="margin-top:16px;">Join</button>
+  </form>
+</div>
+{% endblock %}

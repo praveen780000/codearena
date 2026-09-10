@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Practice Questions</h2>
+  {% for q in questions %}
+    <div class="row">
+      <div>
+        <strong>{{ q.title }}</strong>
+        <span class="badge {{ q.difficulty }}">{{ q.get_difficulty_display }}</span>
+      </div>
+      <a href="{% url 'practice' q.id %}" class="btn btn-outline">Solve</a>
+    </div>
+  {% empty %}
+    <p class="muted">No questions yet.</p>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2>Join a Live Interview</h2>
+  <p class="muted">Got a room code from an interviewer?</p>
+  <a href="{% url 'join_room' %}" class="btn">Join Room</a>
+</div>
+
+<div class="card">
+  <h3>Recent Submissions</h3>
+  {% if recent_submissions %}
+    <table>
+      <tr><th>Question</th><th>Status</th><th>Similarity</th><th>When</th></tr>
+      {% for s in recent_submissions %}
+      <tr>
+        <td>{{ s.question.title }}</td>
+        <td><span class="badge {{ s.status }}">{{ s.status }}</span></td>
+        <td>{{ s.similarity_score }}%</td>
+        <td>{{ s.submitted_at|date:"d M, H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="muted">No submissions yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
