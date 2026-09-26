@@ -11,7 +11,7 @@ SECRET_KEY = os.environ.get(
     'dev-only-secret-key-change-this-before-deploying'
 )
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,.onrender.com').split(',')
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,.onrender.com').split(','),
 CSRF_TRUSTED_ORIGINS = [
     "https://codearena-12-uar4.onrender.com",
 ]
