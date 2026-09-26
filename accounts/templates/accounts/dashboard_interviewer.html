@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="row" style="border-bottom:none;">
+    <h2>Your Interview Rooms</h2>
+    <a href="{% url 'create_room' %}" class="btn">+ New Room</a>
+  </div>
+  {% if rooms %}
+    {% for room in rooms %}
+      <div class="row">
+        <div>
+          <strong>{{ room.room_name }}</strong>
+          <div class="muted">Code: <span class="room-code" style="font-size:16px; padding:4px 10px;">{{ room.room_code }}</span>
+            {% if room.question %} · {{ room.question.title }}{% else %} · no question assigned{% endif %}
+          </div>
+        </div>
+        <a href="{% url 'room_detail' room.room_code %}" class="btn btn-outline">Open</a>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">No rooms yet. Create one and share the code with a candidate.</p>
+  {% endif %}
+</div>
+{% endblock %}

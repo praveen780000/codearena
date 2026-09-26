@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="card" style="max-width:420px; margin:0 auto;">
+  <h2>Login</h2>
+  <form method="post">
+    {% csrf_token %}
+    <label>Username</label>
+    <input type="text" name="username" required style="width:100%;">
+    <label>Password</label>
+    <input type="password" name="password" required style="width:100%;">
+    <button type="submit" style="margin-top:16px;">Login</button>
+  </form>
+  <p class="muted">No account yet? <a href="{% url 'register' %}">Register</a></p>
+</div>
+{% endblock %}
