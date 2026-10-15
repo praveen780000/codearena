@@ -1,0 +1,33 @@
+services:
+  # Django + Channels app — serves HTTP and WebSocket traffic via Daphne
+  - type: web
+    name: codearena
+    env: python
+    rootDir: django_app
+    buildCommand: pip install -r ../requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
+    startCommand: daphne -b 0.0.0.0 -p $PORT codearena.asgi:application
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+      # Shared channel layer so WebSocket messages fan out across all
+      # Daphne instances/workers. Point this at a Render Redis instance
+      # (or any reachable Redis). Falls back to the in-memory layer
+      # (single-process only) if unset.
+      - key: REDIS_URL
+        sync: false
+      # After the judge service below is live, set this to its URL,
+      # e.g. https://codearena-judge.onrender.com
+      - key: FASTAPI_SERVICE_URL
+        sync: false
+
+  # FastAPI judge microservice (executes submitted code)
+  - type: web
+    name: codearena-judge
+    env: python
+    rootDir: fastapi_service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT

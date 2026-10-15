@@ -1,0 +1,10 @@
+Django==5.0.6
+requests==2.32.3
+mysqlclient==2.2.4
+python-dotenv==1.0.1
+whitenoise==6.9.0
+
+# Live interview rooms (WebSocket support)
+channels==4.2.0
+daphne==4.2.3
+channels-redis==4.2.1
