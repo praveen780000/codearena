@@ -1,213 +1,403 @@
+```html
 {% extends "base.html" %}
+
 {% block title %}{{ room.room_name }}{% endblock %}
+
 {% block content %}
+
 <div class="card" style="text-align:center;">
-  <h2>{{ room.room_name }}</h2>
-  <div class="room-code">{{ room.room_code }}</div>
-  <p class="muted" style="margin-top:10px;">Share this code so a candidate can join.</p>
-  <p class="muted" style="margin-top:6px;">
-    <span id="connection-status" style="color:var(--warn);">● connecting…</span>
-    &nbsp;·&nbsp; Online: <span id="online-count">{{ participants|length }}</span>
-  </p>
+    <h2>{{ room.room_name }}</h2>
+
+    <div class="room-code">{{ room.room_code }}</div>
+
+    <p class="muted" style="margin-top:10px;">
+        Share this code so a candidate can join.
+    </p>
+
+    <p class="muted" style="margin-top:6px;">
+        <span id="connection-status" style="color:var(--warn);">
+            ● connecting…
+        </span>
+        &nbsp;·&nbsp;
+        Online: <span id="online-count">{{ participants|length }}</span>
+    </p>
 </div>
 
 <div class="card">
-  <h3>Live Shared Editor</h3>
-  <p class="muted" style="margin-top:-8px;">Typing here syncs instantly with everyone else in the room.</p>
-  <form method="post">
-    {% csrf_token %}
-    <textarea id="live-editor" name="shared_code" rows="16">{{ room.shared_code }}</textarea>
-    <button type="submit" style="margin-top:12px;">Save Code</button>
-  </form>
+    <h3>Live Shared Editor</h3>
+
+    <p class="muted" style="margin-top:-8px;">
+        Typing here syncs instantly with everyone else in the room.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <textarea id="live-editor"
+                  name="shared_code"
+                  rows="16">{{ room.shared_code }}</textarea>
+
+        <button type="submit" style="margin-top:12px;">
+            Save Code
+        </button>
+    </form>
 </div>
 
 <div class="card">
-  <h3>Room Chat</h3>
-  <div id="chat-box" style="height:220px; overflow-y:auto; border:1px solid #334155; border-radius:8px; padding:10px; background:#0f172a;"></div>
-  <div style="display:flex; gap:8px; margin-top:10px;">
-    <input type="text" id="chat-message" placeholder="Type a message…" style="flex:1;">
-    <button type="button" id="send-chat">Send</button>
-  </div>
+    <h3>Room Chat</h3>
+
+    <div id="chat-box"
+         style="height:220px; overflow-y:auto; border:1px solid #334155; border-radius:8px; padding:10px; background:#0f172a;">
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:10px;">
+        <input type="text"
+               id="chat-message"
+               placeholder="Type a message…"
+               style="flex:1;">
+
+        <button type="button" id="send-chat">
+            Send
+        </button>
+    </div>
 </div>
 
 <div class="card">
-  <h3>Participants</h3>
-  <ul id="participants-list" class="plain-list" style="list-style:none; padding:0; margin:0;">
-    {% for p in participants %}
-      <li>{{ p.username }}</li>
-    {% empty %}
-      <li class="muted">No one has joined yet.</li>
-    {% endfor %}
-  </ul>
+    <h3>Participants</h3>
+
+    <ul id="participants-list"
+        class="plain-list"
+        style="list-style:none; padding:0; margin:0;">
+
+        {% for p in participants %}
+            <li data-username="{{ p.username }}">
+                {{ p.username }}
+            </li>
+        {% empty %}
+            <li class="muted">No one has joined yet.</li>
+        {% endfor %}
+
+    </ul>
 </div>
 
 {% if question %}
+
 <div class="card">
-  <h3>{{ question.title }} <span class="badge {{ question.difficulty }}">{{ question.get_difficulty_display }}</span></h3>
-  <p>{{ question.description }}</p>
-  {% if question.sample_input %}
-    <p class="muted">Sample input: <code>{{ question.sample_input }}</code></p>
-    <p class="muted">Expected output: <code>{{ question.sample_output }}</code></p>
-  {% endif %}
+    <h3>
+        {{ question.title }}
+        <span class="badge {{ question.difficulty }}">
+            {{ question.get_difficulty_display }}
+        </span>
+    </h3>
+
+    <p>{{ question.description }}</p>
+
+    {% if question.sample_input %}
+        <p class="muted">
+            Sample input:
+            <code>{{ question.sample_input }}</code>
+        </p>
+
+        <p class="muted">
+            Expected output:
+            <code>{{ question.sample_output }}</code>
+        </p>
+    {% endif %}
 </div>
 
 <div class="card">
-  <h3>Submit Solution</h3>
-  <form method="post">
-    {% csrf_token %}
-    <textarea name="code" rows="12">{{ question.starter_code }}</textarea>
-    <button type="submit" style="margin-top:12px;">Submit</button>
-  </form>
+    <h3>Submit Solution</h3>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <textarea name="code"
+                  rows="12">{{ question.starter_code }}</textarea>
+
+        <button type="submit" style="margin-top:12px;">
+            Submit
+        </button>
+    </form>
 </div>
 
 <div class="card">
-  <h3>Submission History (this room)</h3>
-  {% for s in submissions %}
-    <div style="border-bottom:1px solid #334155; padding:14px 0;">
-      <span class="badge {{ s.status }}">{{ s.status }}</span>
-      <span class="muted">{{ s.submitted_at|date:"d M Y, H:i" }}</span>
-      {% if s.similarity_score >= 80 %}
-        <div class="similarity-warning">
-          ⚠️ {{ s.similarity_score }}% similar to a submission by {{ s.most_similar_user }}.
+    <h3>Submission History (this room)</h3>
+
+    {% for s in submissions %}
+        <div style="border-bottom:1px solid #334155; padding:14px 0;">
+
+            <span class="badge {{ s.status }}">
+                {{ s.status }}
+            </span>
+
+            <span class="muted">
+                {{ s.submitted_at|date:"d M Y, H:i" }}
+            </span>
+
+            {% if s.similarity_score >= 80 %}
+                <div class="similarity-warning">
+                    ⚠️ {{ s.similarity_score }}% similar to a submission by
+                    {{ s.most_similar_user }}.
+                </div>
+            {% endif %}
+
+            <pre class="output">{{ s.output }}</pre>
         </div>
-      {% endif %}
-      <pre class="output">{{ s.output }}</pre>
-    </div>
-  {% empty %}
-    <p class="muted">No submissions yet in this room.</p>
-  {% endfor %}
+    {% empty %}
+        <p class="muted">No submissions yet in this room.</p>
+    {% endfor %}
 </div>
+
 {% else %}
+
 <div class="card">
-  <p class="muted">This room has no question assigned yet. Ask the interviewer to set one via the admin panel.</p>
+    <p class="muted">
+        This room has no question assigned yet.
+        Ask the interviewer to set one via the admin panel.
+    </p>
 </div>
+
 {% endif %}
+
 {% endblock %}
+
 
 {% block extra_js %}
+
 <script id="room-code-value" type="application/json">{{ room.room_code|escapejs }}</script>
+
 <script>
 (function () {
-  const roomCode = document.getElementById("room-code-value").textContent.trim();
-  const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-  const socket = new WebSocket(wsProtocol + window.location.host + "/ws/room/" + roomCode + "/");
+    "use strict";
 
-  const statusEl = document.getElementById("connection-status");
-  const onlineCountEl = document.getElementById("online-count");
-  const editor = document.getElementById("live-editor");
-  const chatBox = document.getElementById("chat-box");
-  const chatInput = document.getElementById("chat-message");
-  const sendChatBtn = document.getElementById("send-chat");
-  const participantsList = document.getElementById("participants-list");
+    const roomCode = document
+        .getElementById("room-code-value")
+        .textContent.trim();
 
-  let onlineCount = parseInt(onlineCountEl.textContent, 10) || 0;
-  let typingTimeout = null;
-  let suppressNextInput = false;
+    const wsProtocol =
+        window.location.protocol === "https:" ? "wss://" : "ws://";
 
-  function appendSystemMessage(text) {
-    const p = document.createElement("p");
-    p.innerHTML = "<i>" + text + " (" + new Date().toLocaleTimeString() + ")</i>";
-    chatBox.appendChild(p);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }
+    const socket = new WebSocket(
+        wsProtocol + window.location.host + "/ws/room/" + roomCode + "/"
+    );
 
-  function appendChatMessage(username, message) {
-    const p = document.createElement("p");
-    const strong = document.createElement("strong");
-    strong.textContent = username + ": ";
-    p.appendChild(strong);
-    p.appendChild(document.createTextNode(message));
-    const small = document.createElement("small");
-    small.style.color = "var(--muted)";
-    small.textContent = " (" + new Date().toLocaleTimeString() + ")";
-    p.appendChild(small);
-    chatBox.appendChild(p);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }
+    const statusEl = document.getElementById("connection-status");
+    const onlineCountEl = document.getElementById("online-count");
+    const editor = document.getElementById("live-editor");
+    const chatBox = document.getElementById("chat-box");
+    const chatInput = document.getElementById("chat-message");
+    const sendChatBtn = document.getElementById("send-chat");
+    const participantsList = document.getElementById("participants-list");
 
-  function addParticipant(username) {
-    const emptyItem = participantsList.querySelector("li.muted");
-    if (emptyItem) emptyItem.remove();
-    if ([...participantsList.children].some((li) => li.textContent === username)) return;
-    const li = document.createElement("li");
-    li.textContent = username;
-    participantsList.appendChild(li);
-  }
+    let typingTimeout = null;
+    let suppressNextInput = false;
 
-  socket.onopen = function () {
-    statusEl.textContent = "● live";
-    statusEl.style.color = "var(--success)";
-  };
+    function appendSystemMessage(message) {
+        const p = document.createElement("p");
+        const italic = document.createElement("i");
 
-  socket.onclose = function () {
-    statusEl.textContent = "● disconnected";
-    statusEl.style.color = "var(--danger)";
-  };
+        italic.textContent =
+            message + " (" + new Date().toLocaleTimeString() + ")";
 
-  socket.onerror = function () {
-    statusEl.textContent = "● connection error";
-    statusEl.style.color = "var(--danger)";
-  };
-
-  socket.onmessage = function (event) {
-    const data = JSON.parse(event.data);
-
-    if (data.action === "user_joined") {
-      onlineCount++;
-      onlineCountEl.textContent = onlineCount;
-      addParticipant(data.username);
-      appendSystemMessage(data.username + " joined the room");
-      return;
+        p.appendChild(italic);
+        chatBox.appendChild(p);
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    if (data.action === "user_left") {
-      onlineCount = Math.max(0, onlineCount - 1);
-      onlineCountEl.textContent = onlineCount;
-      appendSystemMessage(data.username + " left the room");
-      return;
+    function appendChatMessage(username, message) {
+        const p = document.createElement("p");
+        const strong = document.createElement("strong");
+
+        strong.textContent = username + ": ";
+        p.appendChild(strong);
+        p.appendChild(document.createTextNode(message));
+
+        const small = document.createElement("small");
+        small.style.color = "var(--muted)";
+        small.textContent =
+            " (" + new Date().toLocaleTimeString() + ")";
+
+        p.appendChild(small);
+        chatBox.appendChild(p);
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    if (data.action === "chat") {
-      appendChatMessage(data.username, data.message);
-      return;
+    // Add a participant only if that username is not already displayed.
+    function addParticipant(username) {
+        const alreadyExists = [
+            ...participantsList.querySelectorAll("li[data-username]")
+        ].some(function (li) {
+            return li.dataset.username === username;
+        });
+
+        if (alreadyExists) {
+            return;
+        }
+
+        const emptyItem = participantsList.querySelector("li.muted");
+
+        if (emptyItem) {
+            emptyItem.remove();
+        }
+
+        const li = document.createElement("li");
+        li.dataset.username = username;
+        li.textContent = username;
+
+        participantsList.appendChild(li);
     }
 
-    if (data.action === "code_update") {
-      const cursor = editor.selectionStart;
-      suppressNextInput = true;
-      editor.value = data.code;
-      // best-effort cursor preservation for the person receiving the update
-      try { editor.selectionStart = editor.selectionEnd = cursor; } catch (e) {}
+    function removeParticipant(username) {
+        const items = [
+            ...participantsList.querySelectorAll("li[data-username]")
+        ];
+
+        items.forEach(function (li) {
+            if (li.dataset.username === username) {
+                li.remove();
+            }
+        });
+
+        if (
+            participantsList.querySelectorAll("li[data-username]").length === 0
+        ) {
+            if (!participantsList.querySelector("li.muted")) {
+                const li = document.createElement("li");
+                li.className = "muted";
+                li.textContent = "No one has joined yet.";
+                participantsList.appendChild(li);
+            }
+        }
     }
-  };
 
-  editor.addEventListener("input", function () {
-    if (suppressNextInput) {
-      suppressNextInput = false;
-      return;
+    socket.onopen = function () {
+        statusEl.textContent = "● live";
+        statusEl.style.color = "var(--success)";
+    };
+
+    socket.onclose = function () {
+        statusEl.textContent = "● disconnected";
+        statusEl.style.color = "var(--danger)";
+    };
+
+    socket.onerror = function () {
+        statusEl.textContent = "● connection error";
+        statusEl.style.color = "var(--danger)";
+    };
+
+    socket.onmessage = function (event) {
+        let data;
+
+        try {
+            data = JSON.parse(event.data);
+        } catch (error) {
+            console.error("Invalid WebSocket message:", error);
+            return;
+        }
+
+        // The server provides the authoritative online count.
+        if (data.action === "presence_update") {
+            if (Number.isFinite(Number(data.online_count))) {
+                onlineCountEl.textContent = Number(data.online_count);
+            }
+
+            if (data.event === "joined") {
+                addParticipant(data.username);
+                appendSystemMessage(data.username + " joined the room");
+            } else if (data.event === "left") {
+                removeParticipant(data.username);
+                appendSystemMessage(data.username + " left the room");
+            }
+
+            return;
+        }
+
+        // Compatibility with consumers that send the older event format.
+        if (data.action === "user_joined") {
+            addParticipant(data.username);
+            return;
+        }
+
+        if (data.action === "user_left") {
+            removeParticipant(data.username);
+            return;
+        }
+
+        if (data.action === "chat") {
+            appendChatMessage(data.username, data.message);
+            return;
+        }
+
+        if (data.action === "code_update") {
+            const cursor = editor.selectionStart;
+
+            suppressNextInput = true;
+            editor.value = data.code;
+
+            try {
+                editor.selectionStart = editor.selectionEnd = cursor;
+            } catch (error) {
+                // Cursor restoration is best-effort.
+            }
+
+            return;
+        }
+    };
+
+    // Synchronize editor changes with other connected users.
+    editor.addEventListener("input", function () {
+        if (suppressNextInput) {
+            suppressNextInput = false;
+            return;
+        }
+
+        if (socket.readyState !== WebSocket.OPEN) {
+            return;
+        }
+
+        clearTimeout(typingTimeout);
+
+        typingTimeout = setTimeout(function () {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    code: editor.value
+                }));
+            }
+        }, 150);
+    });
+
+    // Send a chat message.
+    function sendChat() {
+        const message = chatInput.value.trim();
+
+        if (!message || socket.readyState !== WebSocket.OPEN) {
+            return;
+        }
+
+        socket.send(JSON.stringify({
+            type: "chat",
+            message: message
+        }));
+
+        chatInput.value = "";
     }
-    if (socket.readyState !== WebSocket.OPEN) return;
 
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(function () {
-      socket.send(JSON.stringify({ code: editor.value }));
-    }, 150);
-  });
+    sendChatBtn.addEventListener("click", sendChat);
 
-  function sendChat() {
-    const message = chatInput.value.trim();
-    if (!message || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "chat", message: message }));
-    chatInput.value = "";
-  }
+    chatInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendChat();
+        }
+    });
 
-  sendChatBtn.addEventListener("click", sendChat);
-  chatInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      sendChat();
-    }
-  });
+    // Cancel a pending editor update when leaving the page.
+    window.addEventListener("beforeunload", function () {
+        clearTimeout(typingTimeout);
+    });
+
 })();
 </script>
+
 {% endblock %}
+```

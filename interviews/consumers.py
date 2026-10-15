@@ -1,4 +1,6 @@
+
 import json
+import asyncio
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -7,49 +9,95 @@ from .models import Room
 
 
 class RoomConsumer(AsyncWebsocketConsumer):
-    """
-    One group per interview room (keyed by room_code). Broadcasts:
-      - code_update: live sync of the shared editor's contents
-      - chat_message: room chat
-      - user_joined / user_left: presence, for the online-count badge
-    """
+
+
+    # room_code -> {username: set(channel_names)}
+    room_presence = {}
+    presence_lock = asyncio.Lock()
 
     async def connect(self):
-        self.room_code = self.scope["url_route"]["kwargs"]["room_code"].upper()
+        self.room_code = self.scope["url_route"]["kwargs"][
+            "room_code"
+        ].upper()
+
         self.room_group_name = f"room_{self.room_code}"
         self.user = self.scope.get("user")
+        self.username = None
+        self.registered = False
 
-        # Reject anonymous users and unknown rooms before joining the group.
-        if self.user is None or not self.user.is_authenticated:
+        if not self.user or not self.user.is_authenticated:
             await self.close()
             return
 
-        room_exists = await self._room_exists()
-        if not room_exists:
+        if not await self._room_exists():
             await self.close()
             return
+
+        self.username = self.user.username
+
+        await self.channel_layer.group_add(
+            self.room_group_name, self.channel_name
+        )
+        await self.accept()
+
+        # Register this WebSocket connection.
+        async with self.presence_lock:
+            users = self.room_presence.setdefault(self.room_code, {})
+            connections = users.setdefault(self.username, set())
+            was_online = bool(connections)
+            connections.add(self.channel_name)
+            self.registered = True
+            online_count = len(users)
+
 
         await self._add_participant()
 
-        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
-        await self.accept()
-
         await self.channel_layer.group_send(
             self.room_group_name,
-            {"type": "user_joined", "username": self.user.username},
+            {
+                "type": "presence_update",
+                "username": self.username,
+                "online_count": online_count,
+                "event": "joined" if not was_online else "connected",
+            },
         )
 
     async def disconnect(self, close_code):
         if not hasattr(self, "room_group_name"):
             return
 
-        if self.user and self.user.is_authenticated:
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {"type": "user_left", "username": self.user.username},
-            )
+        if self.registered:
+            async with self.presence_lock:
+                users = self.room_presence.get(self.room_code, {})
+                connections = users.get(self.username, set())
 
-        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+                connections.discard(self.channel_name)
+
+                if not connections:
+                    users.pop(self.username, None)
+
+                if not users:
+                    self.room_presence.pop(self.room_code, None)
+                    online_count = 0
+                else:
+                    online_count = len(users)
+
+                user_left = not connections
+
+            if user_left:
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        "type": "presence_update",
+                        "username": self.username,
+                        "online_count": online_count,
+                        "event": "left",
+                    },
+                )
+
+        await self.channel_layer.group_discard(
+            self.room_group_name, self.channel_name
+        )
 
     async def receive(self, text_data):
         try:
@@ -67,28 +115,25 @@ class RoomConsumer(AsyncWebsocketConsumer):
                 {
                     "type": "chat_message",
                     "message": message,
-                    "username": self.user.username,
+                    "username": self.username,
                 },
             )
             return
 
-        # Anything else is treated as a live code update from the shared editor.
-        code = data.get("code", "")
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                "type": "code_update",
-                "code": code,
-                # so the sender doesn't get its own keystrokes echoed back
-                "sender_channel": self.channel_name,
-            },
-        )
-
-    # --- group event handlers (name must match the "type" key above) ----
+        if "code" in data:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "code_update",
+                    "code": data["code"],
+                    "sender_channel": self.channel_name,
+                },
+            )
 
     async def code_update(self, event):
         if event.get("sender_channel") == self.channel_name:
             return
+
         await self.send(text_data=json.dumps({
             "action": "code_update",
             "code": event["code"],
@@ -101,26 +146,25 @@ class RoomConsumer(AsyncWebsocketConsumer):
             "username": event["username"],
         }))
 
-    async def user_joined(self, event):
+    async def presence_update(self, event):
         await self.send(text_data=json.dumps({
-            "action": "user_joined",
+            "action": "presence_update",
             "username": event["username"],
+            "online_count": event["online_count"],
+            "event": event["event"],
         }))
-
-    async def user_left(self, event):
-        await self.send(text_data=json.dumps({
-            "action": "user_left",
-            "username": event["username"],
-        }))
-
-    # --- db helpers -------------------------------------------------------
 
     @database_sync_to_async
     def _room_exists(self):
-        return Room.objects.filter(room_code=self.room_code).exists()
+        return Room.objects.filter(
+            room_code=self.room_code
+        ).exists()
 
     @database_sync_to_async
     def _add_participant(self):
-        room = Room.objects.filter(room_code=self.room_code).first()
+        room = Room.objects.filter(
+            room_code=self.room_code
+        ).first()
+
         if room:
             room.participants.add(self.user)
