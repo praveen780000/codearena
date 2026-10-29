@@ -11,11 +11,17 @@ SECRET_KEY = os.environ.get(
     'dev-only-secret-key-change-this-before-deploying'
 )
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,.onrender.com').split(',')
-CSRF_TRUSTED_ORIGINS = [
-    "https://*.onrender.com",
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "codearena-11-bz0o.onrender.com",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+    "https://codearena-11-bz0o.onrender.com",
+]
 INSTALLED_APPS = [
     'daphne',
     'channels',
