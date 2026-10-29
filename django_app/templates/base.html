@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}CodeArena{% endblock %}</title>
+<style>
+  :root { --primary:#7c3aed; --bg:#0f172a; --panel:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --danger:#ef4444; --success:#22c55e; --warn:#f59e0b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); }
+  nav { background:#1e1b3a; color:#fff; padding:14px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; border-bottom:1px solid #312e81; }
+  nav a { color:#e2e8f0; text-decoration:none; margin-left:16px; font-weight:500; }
+  nav a:hover { color:var(--primary); }
+  .container { max-width:960px; margin:32px auto; padding:0 16px; }
+  .card { background:var(--panel); border-radius:12px; padding:24px; box-shadow:0 1px 3px rgba(0,0,0,0.3); margin-bottom:20px; border:1px solid #334155; }
+  h1,h2,h3 { margin-top:0; color:#f1f5f9; }
+  input, select, textarea, button { font-size:14px; padding:9px 10px; border-radius:8px; border:1px solid #475569; font-family: inherit; background:#0f172a; color:var(--text); }
+  textarea { width:100%; font-family: "SFMono-Regular", Consolas, monospace; }
+  label { display:block; font-size:13px; color:var(--muted); margin-bottom:4px; margin-top:12px; }
+  button, .btn { background:var(--primary); color:#fff; border:none; cursor:pointer; text-decoration:none; display:inline-block; padding:9px 16px; }
+  button:hover, .btn:hover { opacity:0.85; }
+  .btn-outline { background:transparent; color:var(--primary); border:1px solid var(--primary); }
+  .btn-danger { background:var(--danger); }
+  .msg { padding:10px 14px; border-radius:8px; margin-bottom:12px; }
+  .msg.success { background:#052e1a; color:var(--success); border:1px solid #14532d; }
+  .msg.error { background:#3f0d0d; color:var(--danger); border:1px solid #7f1d1d; }
+  table { width:100%; border-collapse: collapse; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid #334155; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #334155; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+  .badge.easy { background:#052e1a; color:var(--success); }
+  .badge.medium { background:#422006; color:var(--warn); }
+  .badge.hard { background:#3f0d0d; color:var(--danger); }
+  .badge.Passed { background:#052e1a; color:var(--success); }
+  .badge.Failed { background:#422006; color:var(--warn); }
+  .badge.Error, .badge.Pending { background:#3f0d0d; color:var(--danger); }
+  .room-code { font-family: monospace; font-size:28px; letter-spacing:4px; background:#0f172a; padding:12px 20px; border-radius:8px; display:inline-block; border:1px dashed var(--primary); }
+  pre.output { background:#020617; color:#e2e8f0; padding:14px; border-radius:8px; overflow-x:auto; font-size:13px; white-space:pre-wrap; }
+  .similarity-warning { background:#422006; border-left:4px solid var(--warn); padding:10px 14px; border-radius:6px; margin-top:8px; font-size:14px; }
+</style>
+</head>
+<body>
+<nav>
+  <div><strong>⚔️ CodeArena</strong></div>
+  <div>
+    {% if user.is_authenticated %}
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <a href="{% url 'question_list' %}">Practice</a>
+      {% if user.role == 'interviewer' %}<a href="{% url 'create_room' %}">New Room</a>{% else %}<a href="{% url 'join_room' %}">Join Room</a>{% endif %}
+      <a href="{% url 'logout' %}">Logout ({{ user.username }})</a>
+    {% else %}
+      <a href="{% url 'login' %}">Login</a>
+      <a href="{% url 'register' %}">Register</a>
+    {% endif %}
+  </div>
+</nav>
+<div class="container">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="msg {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+  {% block content %}{% endblock %}
+</div>
+</body>
+</html>
