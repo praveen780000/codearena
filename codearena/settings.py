@@ -12,13 +12,28 @@ SECRET_KEY = os.environ.get(
 )
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
+# --- Hosts / CSRF / proxy (needed for Render) --------------------------
+ALLOWED_HOSTS = [
+    'codearena-11-bz0o.onrender.com',
+    'localhost',
+    '127.0.0.1',
+]
 CSRF_TRUSTED_ORIGINS = [
-    "https://codearena-11-bz0o.onrender.com",
+    'https://codearena-11-bz0o.onrender.com',
 ]
 
-ALLOWED_HOSTS = ["codearena-11-bz0o.onrender.com", "localhost", "127.0.0.1"]
+# Render sets this automatically; picks up the URL even if it changes.
+RENDER_HOST = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_HOST:
+    if RENDER_HOST not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(RENDER_HOST)
+    origin = f'https://{RENDER_HOST}'
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
 
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# Render terminates HTTPS at its proxy, so trust the forwarded protocol.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 INSTALLED_APPS = [
     'daphne',
     'channels',
@@ -69,10 +84,6 @@ WSGI_APPLICATION = 'codearena.wsgi.application'
 ASGI_APPLICATION = 'codearena.asgi.application'
 
 # --- Channels (WebSocket / live interview rooms) -----------------------
-# Uses Redis when REDIS_URL is set (recommended in production, since
-# daphne is typically run with several worker processes/instances and
-# they need a shared channel layer to relay messages between them).
-# Falls back to the in-memory layer for local/single-process dev.
 REDIS_URL = os.environ.get('REDIS_URL')
 if REDIS_URL:
     CHANNEL_LAYERS = {
@@ -91,8 +102,6 @@ else:
     }
 
 # --- Database ---------------------------------------------------------
-# SQLite by default for zero-setup local dev. Set USE_MYSQL=True + the
-# DB_* env vars below to use MySQL instead.
 if os.environ.get('USE_MYSQL', 'False') == 'True':
     DATABASES = {
         'default': {
@@ -126,6 +135,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
@@ -135,8 +145,7 @@ LOGOUT_REDIRECT_URL = 'login'
 # Internal judge microservice (plain HTTP, no auth yet — see README)
 FASTAPI_SERVICE_URL = os.environ.get('FASTAPI_SERVICE_URL', 'http://127.0.0.1:8001')
 
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+# --- Production-only security -----------------------------------------
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
